@@ -32,14 +32,18 @@ class RubiksCube {
 public:
     RubiksCube();
     void print_solved_state();
+    void print_unsolved_state();
     void set_unsolved_state();
     int solve_primary_face();
 private:
     RubiksMap unsolved_state;
-    static RubiksMap solved_state;
-    std::map<std::string, Face*> faces;
-    static std::map<RubiksCoord, std::array<Edge*, 4>> edge_adjacencies;
-    static Edge* edgify(RubiksCoord c, char face, char turn);
-    std::pair<std::string, std::string> calculate_turn(RubiksCoord& start, RubiksCoord& end);
+    std::map<char, Face*> faces;
     int get_euclidean_distance(RubiksCoord unsolved, RubiksCoord solved);
+    void make_move(Face* face, char turn);
+
+    /* STATIC DECLARATIONS */
+    static RubiksMap solved_state;
+    static Edge* edgify(RubiksCoord c, char face, char turn);
+    static std::map<RubiksCoord, std::array<Edge*, 4>> edge_adjacencies;
+    /* END STATIC DECLARATIONS */
 };
