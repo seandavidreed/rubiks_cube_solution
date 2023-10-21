@@ -24,8 +24,9 @@ public:
         Node* next;
     };
     Face(std::array<std::string, 8> cubes);
-    Node* zero_ptr;
+    Node* head;
     std::array<Node*, 4> affected_faces;
+    void cycle_list(char cycle, int times);
 };
 
 class RubiksCube {
@@ -35,12 +36,12 @@ public:
     void print_unsolved_state();
     void set_unsolved_state();
     int solve_primary_face();
-private:
+    void make_move(Face* face, char turn);
+    void cube_swap(Face* face, Face::Node* ptr);
     RubiksMap unsolved_state;
+private:
     std::map<char, Face*> faces;
     int get_euclidean_distance(RubiksCoord unsolved, RubiksCoord solved);
-    void make_move(Face* face, char turn);
-
     /* STATIC DECLARATIONS */
     static RubiksMap solved_state;
     static Edge* edgify(RubiksCoord c, char face, char turn);

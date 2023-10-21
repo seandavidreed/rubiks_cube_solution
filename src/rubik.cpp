@@ -52,35 +52,35 @@ RubiksCube::RubiksCube() {
     Face* back = new Face({"ygo", "wo", "wbo", "gr", "ygr", "go", "wgo", "yg"});
     
     // Aligning each face with cubes from neighboring faces
-    up->affected_faces[0] = back->zero_ptr->next->next;
-    up->affected_faces[1] = right->zero_ptr->next->next;
-    up->affected_faces[2] = front->zero_ptr->next->next;
-    up->affected_faces[3] = left->zero_ptr->next->next;
+    up->affected_faces[0] = back->head->next->next;
+    up->affected_faces[1] = right->head->next->next;
+    up->affected_faces[2] = front->head->next->next;
+    up->affected_faces[3] = left->head->next->next;
 
-    front->affected_faces[0] = up->zero_ptr->prev->prev;    
-    front->affected_faces[1] = right->zero_ptr->prev->prev;
-    front->affected_faces[2] = down->zero_ptr->next->next;
-    front->affected_faces[3] = left->zero_ptr->next->next->next->next;
+    front->affected_faces[0] = up->head->prev->prev;    
+    front->affected_faces[1] = right->head->prev->prev;
+    front->affected_faces[2] = down->head->next->next;
+    front->affected_faces[3] = left->head->next->next->next->next;
 
-    down->affected_faces[0] = front->zero_ptr->prev->prev;
-    down->affected_faces[1] = right->zero_ptr->prev->prev;
-    down->affected_faces[2] = back->zero_ptr->prev->prev;
-    down->affected_faces[3] = left->zero_ptr->prev->prev;
+    down->affected_faces[0] = front->head->prev->prev;
+    down->affected_faces[1] = right->head->prev->prev;
+    down->affected_faces[2] = back->head->prev->prev;
+    down->affected_faces[3] = left->head->prev->prev;
 
-    left->affected_faces[0] = up->zero_ptr;
-    left->affected_faces[1] = front->zero_ptr;
-    left->affected_faces[2] = down->zero_ptr;
-    left->affected_faces[3] = back->zero_ptr->next->next->next->next;
+    left->affected_faces[0] = up->head;
+    left->affected_faces[1] = front->head;
+    left->affected_faces[2] = down->head;
+    left->affected_faces[3] = back->head->next->next->next->next;
 
-    right->affected_faces[0] = up->zero_ptr->next->next->next->next;
-    right->affected_faces[1] = back->zero_ptr;
-    right->affected_faces[2] = down->zero_ptr->next->next->next->next;
-    right->affected_faces[3] = front->zero_ptr->next->next;
+    right->affected_faces[0] = up->head->next->next->next->next;
+    right->affected_faces[1] = back->head;
+    right->affected_faces[2] = down->head->next->next->next->next;
+    right->affected_faces[3] = front->head->next->next;
 
-    back->affected_faces[0] = up->zero_ptr->next->next;
-    back->affected_faces[1] = left->zero_ptr;
-    back->affected_faces[2] = down->zero_ptr->prev->prev;
-    back->affected_faces[3] = right->zero_ptr->next->next->next->next;
+    back->affected_faces[0] = up->head->next->next;
+    back->affected_faces[1] = left->head;
+    back->affected_faces[2] = down->head->prev->prev;
+    back->affected_faces[3] = right->head->next->next->next->next;
 
     faces['U'] = up;
     faces['F'] = front;
@@ -92,7 +92,7 @@ RubiksCube::RubiksCube() {
 
 Face::Face(std::array<std::string, 8> cubes) {
     Node* ptr = new Node;
-    zero_ptr = ptr;
+    head = ptr;
     ptr->prev = nullptr;
     ptr->next = nullptr;
     ptr->cube = cubes[0];
@@ -100,8 +100,8 @@ Face::Face(std::array<std::string, 8> cubes) {
     for (int i = 1; i < 8; i++) {
         ptr->next = new Node;
         ptr->next->prev = ptr;
-        ptr->next->next = zero_ptr;
-        zero_ptr->prev = ptr->next;
+        ptr->next->next = head;
+        head->prev = ptr->next;
         ptr = ptr->next;
         ptr->cube = cubes[i];
     }
@@ -186,42 +186,38 @@ int RubiksCube::get_euclidean_distance(RubiksCoord unsolved, RubiksCoord solved)
     return std::floor(euclidean);
 }
 
-
-void RubiksCube::make_move(Face* face, char turn) {
-    if (turn == 'L') {
-        face->zero_ptr = face->zero_ptr->next->next;
+void Face::cycle_list(char cycle, int times) {
+    // This function cycles through the doubly-linked circular linked list
+    // attribute in the Face class.
+    if (cycle == 'L') {
+        for (int i = 0; i < times; i++) this->head = this->head->prev;
     }
     else {
-        face->zero_ptr = face->zero_ptr->prev->prev;
+        for (int i = 0; i < times; i++) this->head = this->head->next;
     }
+}
+
+void RubiksCube::cube_swap(Face* face, Face::Node* ptr) {
+    // Update coordinate of cube
+    std::cout << face->head->cube << ' ' << ptr->cube << std::endl;
+    unsolved_state.at(ptr->cube) = unsolved_state.at(face->head->cube);
+
+    // Transfer cube name from moved to affected face
+    ptr->cube = face->head->cube;
+}
+
+void RubiksCube::make_move(Face* face, char turn) {
+    if (turn == 'L') face->cycle_list('R', 2);
+    else face->cycle_list('L', 2);
 
     // Update affected faces by replacing their adjacent cubes
-    // with the newly-moved cubes in the face in question.
+    // with the newly-moved cubes in the face in question. 
     for (Face::Node* ptr : face->affected_faces) {
-
-        // Update coordinate of moved cube
-        unsolved_state.at(face->zero_ptr->cube) = unsolved_state.at(ptr->cube);
-        // Transfer cube name from moved to affected face
-        ptr->cube = face->zero_ptr->cube;
-        std::cout << face->zero_ptr->cube << std::endl;
-        // Iterate to next cube in face.
-        face->zero_ptr = face->zero_ptr->next;
-        
-        // Update coordinate of moved cube
-        unsolved_state.at(face->zero_ptr->cube) = unsolved_state.at(ptr->cube);
-        // Transfer cube name from moved to affected face
-        ptr->prev->cube = face->zero_ptr->next->cube;
-        std::cout << face->zero_ptr->cube << std::endl;
-        // Iterate to next cube in face.
-        face->zero_ptr = face->zero_ptr->next;
-
-        // Update coordinate of moved cube
-        unsolved_state.at(face->zero_ptr->cube) = unsolved_state.at(ptr->cube);
-        // Transfer cube name from moved to affected face
-        ptr->prev->prev->cube = face->zero_ptr->next->next->cube;
-        std::cout << face->zero_ptr->cube << std::endl;
-        // Iterate to next cube in face.
-
+        cube_swap(face, ptr);
+        face->cycle_list('R', 1);
+        cube_swap(face, ptr->prev);
+        face->cycle_list('R', 1);
+        cube_swap(face, ptr->prev->prev);
     }
 }
 
@@ -229,11 +225,13 @@ int RubiksCube::solve_primary_face() {
     // See which edges are out of place
     print_unsolved_state();
     while (unsolved_state.at("wo") != solved_state.at("wo")) {
-        RubiksCoord unsolved = unsolved_state["wo"];
-        RubiksCoord solved = solved_state["wo"];
+        
+        RubiksCoord unsolved = unsolved_state.at("wo");
+        RubiksCoord solved = solved_state.at("wo");
+        
         int distance = get_euclidean_distance(unsolved, solved);
         RubiksCoord best_move;
-        for (auto x : edge_adjacencies[unsolved]) {
+        for (auto x : edge_adjacencies.at(unsolved)) {
             int new_distance = get_euclidean_distance(x->coord, solved);
             if (new_distance < distance) {
                 best_move = x->coord;
@@ -244,7 +242,7 @@ int RubiksCube::solve_primary_face() {
         // Find out what move to make
         // Eventually factor in - minimal disturbance of solved edges
         Edge *move = nullptr;
-        for (auto x : edge_adjacencies[unsolved_state["wo"]]) {
+        for (auto x : edge_adjacencies.at(unsolved_state.at("wo"))) {
             if (x->coord == best_move) {
                 move = x;
                 break;
@@ -252,12 +250,11 @@ int RubiksCube::solve_primary_face() {
         }
         
         // Make the move
-        std::cout << move->move.first << std::endl;
-        std::cout << move->move.second << std::endl;
+        std::cout << move->move.first << ' ' << move->move.second << std::endl;
         make_move(faces[move->move.first], move->move.second); 
         
         print_unsolved_state();
-
+        break;
     }
     // while (unsolved_state["wo"] != solved_state["wo"]) {
 
