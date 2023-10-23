@@ -178,6 +178,15 @@ int RubiksCube::getEuclideanDistance(RubiksCoord unsolved, RubiksCoord solved) c
     return std::floor(euclidean);
 }
 
+RubiksCoord RubiksCube::getLocation(RubiksCoord cube) const {
+    auto iter = state.cbegin();
+    while (iter != state.cend()) {
+        if (iter->second == cube) break;
+        iter++;
+    }
+    return iter->first;
+}
+
 void RubiksCube::makeMove(char move) {
 
     std::array<RubiksCoord, 8>& coords = faces.at(toupper(move));
@@ -212,15 +221,7 @@ void RubiksCube::makeMove(char move) {
 
 }
 
-RubiksCoord RubiksCube::getLocation(RubiksCoord cube) const {
-    auto iter = state.cbegin();
-    while (iter != state.cend()) {
-        if (iter->second == cube) iter++;
-    }
-    return iter->first;
-}
-
-void RubiksCube::solvePrimaryEdge(RubiksCoord key, std::array<char, 3> lockedFaces = {'A','A','A'}) {
+void RubiksCube::solveEdge(RubiksCoord key, std::array<char, 3> lockedFaces = {'A','A','A'}) {
     RubiksCoord location = getLocation(key);
     auto notLocked = [](char c, std::array<char, 3> lf) -> bool {
         if (toupper(c) == lf[0]) return false;
@@ -246,16 +247,33 @@ void RubiksCube::solvePrimaryEdge(RubiksCoord key, std::array<char, 3> lockedFac
     }
 }
 
-int RubiksCube::solveWhiteCross() {
+void adjustOrientation(RubiksCoord cube) {}
+
+void RubiksCube::solveWhiteCross() {
     printState();
     
-    solvePrimaryEdge(WO);
-    solvePrimaryEdge(WB, {'L'});
-    solvePrimaryEdge(WR, {'L','B'});
-    solvePrimaryEdge(WG, {'L','B','R'});
+    solveEdge(WO);
+    solveEdge(WB, {'L'});
+    solveEdge(WR, {'L','B'});
+    solveEdge(WG, {'L','B','R'});
+
+    // adjustOrientation(WO);
+    // adjustOrientation(WB);
+    // adjustOrientation(WR);
+    // adjustOrientation(WG);
     
     printState();
-    return 0;
+}
+
+void RubiksCube::solveLayer2Edges() {
+    printState();
+
+    solveEdge(BO, {'U'});
+    solveEdge(BR, {'U'});
+    solveEdge(GR, {'U'});
+    solveEdge(GO, {'U'});
+
+    printState();
 }
 
 /* END FUNCTION DEFINITIONS */
