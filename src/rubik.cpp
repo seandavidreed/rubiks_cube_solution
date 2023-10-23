@@ -215,11 +215,9 @@ void RubiksCube::makeMove(char move) {
 RubiksCoord RubiksCube::getLocation(RubiksCoord cube) const {
     auto iter = state.cbegin();
     while (iter != state.cend()) {
-        if (iter->second == cube) return iter->first;
-        iter++;
+        if (iter->second == cube) iter++;
     }
-
-    return {99,99,99};
+    return iter->first;
 }
 
 void RubiksCube::solvePrimaryEdge(RubiksCoord key, std::array<char, 3> lockedFaces = {'A','A','A'}) {
