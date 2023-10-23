@@ -222,14 +222,21 @@ RubiksCoord RubiksCube::getLocation(RubiksCoord cube) const {
     return {99,99,99};
 }
 
-void RubiksCube::solvePrimaryEdge(RubiksCoord key) {
+void RubiksCube::solvePrimaryEdge(RubiksCoord key, std::array<char, 3> lockedFaces = {'A','A','A'}) {
     RubiksCoord location = getLocation(key);
+    auto notLocked = [](char c, std::array<char, 3> lf) -> bool {
+        if (toupper(c) == lf[0]) return false;
+        if (toupper(c) == lf[1]) return false;
+        if (toupper(c) == lf[2]) return false;
+        return true;
+    };
+
     while (state.at(key) != key) {
         int distance = getEuclideanDistance(location, key);
         Edge *move;
         for (auto x : edgeAdjacencies.at(location)) {
             int new_distance = getEuclideanDistance(x->coord, key);
-            if (new_distance < distance) {
+            if (new_distance <= distance && notLocked(x->move, lockedFaces)) {
                 move = x;
                 distance = new_distance;
             }
@@ -245,9 +252,9 @@ int RubiksCube::solveWhiteCross() {
     printState();
     
     solvePrimaryEdge(WO);
-    solvePrimaryEdge(WB);
-    solvePrimaryEdge(WR);
-    solvePrimaryEdge(WG);
+    solvePrimaryEdge(WB, {'L'});
+    solvePrimaryEdge(WR, {'L','B'});
+    solvePrimaryEdge(WG, {'L','B','R'});
     
     printState();
     return 0;

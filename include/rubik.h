@@ -19,7 +19,7 @@ class RubiksCube {
 public:
     RubiksCube();
     void printState() const;
-    void solvePrimaryEdge(RubiksCoord key);
+    void solvePrimaryEdge(RubiksCoord key, std::array<char, 3> lockedFaces);
     int solveWhiteCross();
     
     //void overwrite_cube(Face::Node* node, Face::Node* affected_node);
