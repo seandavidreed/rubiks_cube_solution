@@ -1,3 +1,4 @@
-*.o
-vscode.json
-*.bin
+.vscode
+bin/rubikscube
+build/main.o
+build/rubik.o

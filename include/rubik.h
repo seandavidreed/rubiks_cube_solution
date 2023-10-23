@@ -7,44 +7,30 @@
 #pragma once
 
 using RubiksCoord = std::array<int, 3>;
-using RubiksMap = std::map<std::string, RubiksCoord>;
+using RubiksMap = std::map<RubiksCoord, RubiksCoord>;
 
 class Edge {
 public:
     RubiksCoord coord;
-    std::pair<char, char> move;
-};
-
-class Face {
-public:
-    class Node {
-    public:
-        std::string cube;
-        Node* prev;
-        Node* next;
-    };
-    Face(std::array<std::string, 8> cubes);
-    Node* head;
-    std::array<Node*, 4> affected_faces;
-    void cycle_list(char cycle, int times);
+    char move;
 };
 
 class RubiksCube {
 public:
     RubiksCube();
-    void print_solved_state();
-    void print_unsolved_state();
-    void set_unsolved_state();
-    int solve_primary_face();
-    void make_move(Face* face, char turn);
-    void cube_swap(Face* face, Face::Node* ptr);
-    RubiksMap unsolved_state;
+    void printState() const;
+    void solvePrimaryEdge(RubiksCoord key);
+    int solveWhiteCross();
+    
+    //void overwrite_cube(Face::Node* node, Face::Node* affected_node);
+    RubiksMap state;
 private:
-    std::map<char, Face*> faces;
-    int get_euclidean_distance(RubiksCoord unsolved, RubiksCoord solved);
+    int getEuclideanDistance(RubiksCoord unsolved, RubiksCoord solved) const;
+    RubiksCoord getLocation(RubiksCoord cube) const;
+    void makeMove(char move);
     /* STATIC DECLARATIONS */
-    static RubiksMap solved_state;
-    static Edge* edgify(RubiksCoord c, char face, char turn);
-    static std::map<RubiksCoord, std::array<Edge*, 4>> edge_adjacencies;
+    static std::map<char, std::array<RubiksCoord, 8>> faces;
+    static Edge* edgify(RubiksCoord c, char move);
+    static std::map<RubiksCoord, std::array<Edge*, 4>> edgeAdjacencies;
     /* END STATIC DECLARATIONS */
 };

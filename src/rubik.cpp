@@ -4,7 +4,61 @@
 #include <array>
 #include <map>
 #include <cmath>
+#include <cctype>
 #include "../include/rubik.h"
+
+/* GLOBAL VARIABLES */
+
+/* EDGES */
+const RubiksCoord WB = {0,1,1};    
+const RubiksCoord WO = {-1,0,1};
+const RubiksCoord WG = {0,-1,1}; 
+const RubiksCoord WR = {1,0,1};
+const RubiksCoord BO = {-1,1,0};
+const RubiksCoord BR = {1,1,0};
+const RubiksCoord GO = {-1,-1,0};
+const RubiksCoord GR = {1,-1,0};
+const RubiksCoord YB = {0,1,-1};
+const RubiksCoord YO = {-1,0,-1};
+const RubiksCoord YG = {0,-1,-1};
+const RubiksCoord YR = {1,0,-1}; 
+/* CORNERS */
+const RubiksCoord WBO = {-1,1,1}; 
+const RubiksCoord WGO = {-1,-1,1};
+const RubiksCoord WGR = {1,-1,1};
+const RubiksCoord WBR = {1,1,1};
+const RubiksCoord YBO = {-1,1,-1};
+const RubiksCoord YBR = {1,1,-1};
+const RubiksCoord YGR = {1,-1,-1};
+const RubiksCoord YGO = {-1,-1,-1}; 
+
+std::map<RubiksCoord, std::string> names = {
+    {{0,1,1}, "WB"},
+    {{-1,0,1}, "WO"},
+    {{0,-1,1}, "WG"},
+    {{1,0,1}, "WR"},
+    {{-1,1,0}, "BO"},
+    {{1,1,0}, "BR"},
+    {{-1,-1,0}, "GO"},
+    {{1,-1,0}, "GR"},
+    {{0,1,-1}, "YB"},
+    {{-1,0,-1}, "YO"},
+    {{0,-1,-1}, "YG"},
+    {{1,0,-1}, "YR"},
+
+    {{-1,1,1}, "WBO"},
+    {{-1,-1,1}, "WGO"},
+    {{1,-1,1}, "WGR"},
+    {{1,1,1}, "WBR"},
+    {{-1,1,-1}, "YBO"},
+    {{1,1,-1}, "YBR"},
+    {{1,-1,-1}, "YGR"},
+    {{-1,-1,-1}, "YGO"}
+};
+
+/* END GLOBAL VARIABLES */
+
+/***************************************************************************/
 
 /* OPERATOR OVERLOADS */
 // Overload operator<< for RubiksCoord for use in RubiksMap printing.
@@ -13,14 +67,14 @@ std::ostream& operator<<(std::ostream& os, const RubiksCoord& array) {
     for (auto elem: array) {
         os << elem << ' ';
     }
-    os << '}' << std::endl;
+    os << '}';
     return os;
 }
 
 // Overload operator<< for RubiksMap for use in printing.
 std::ostream& operator<<(std::ostream& os, const RubiksMap& rm) {
     for (auto t: rm) {
-        os << t.first << ": " << t.second << std::endl;
+        os << names[t.first] << " ---> " << names[t.second] << std::endl;
     }
     return os;
 }
@@ -42,70 +96,28 @@ bool operator!=(const RubiksCoord& left, const RubiksCoord& right) {
 /* CONSTRUCTORS */
 
 RubiksCube::RubiksCube() {
-    set_unsolved_state();
-    /* THESE INITIALIZATIONS ARE FOR TESTING. TO BE REPLACED BY IMAGE INPUT*/
-    Face* up = new Face({"wbo", "wo", "ygo", "br", "ybr", "wg", "wgr", "yo"});
-    Face* front = new Face({"wgr", "wg", "ybr", "wb", "ybo", "bo", "wbr", "yr"});
-    Face* down = new Face({"wbr", "bo", "ybo", "wr", "wgo", "go", "ygr", "yb"});
-    Face* left = new Face({"wbo", "yo", "wgr", "yr", "wbr", "yb", "ygr", "gr"});
-    Face* right = new Face({"ybr", "br", "ygo", "yg", "wgo", "wr", "ybo", "wb"});
-    Face* back = new Face({"ygo", "wo", "wbo", "gr", "ygr", "go", "wgo", "yg"});
-    
-    // Aligning each face with cubes from neighboring faces
-    up->affected_faces[0] = back->head->next->next;
-    up->affected_faces[1] = right->head->next->next;
-    up->affected_faces[2] = front->head->next->next;
-    up->affected_faces[3] = left->head->next->next;
-
-    front->affected_faces[0] = up->head->prev->prev;    
-    front->affected_faces[1] = right->head->prev->prev;
-    front->affected_faces[2] = down->head->next->next;
-    front->affected_faces[3] = left->head->next->next->next->next;
-
-    down->affected_faces[0] = front->head->prev->prev;
-    down->affected_faces[1] = right->head->prev->prev;
-    down->affected_faces[2] = back->head->prev->prev;
-    down->affected_faces[3] = left->head->prev->prev;
-
-    left->affected_faces[0] = up->head;
-    left->affected_faces[1] = front->head;
-    left->affected_faces[2] = down->head;
-    left->affected_faces[3] = back->head->next->next->next->next;
-
-    right->affected_faces[0] = up->head->next->next->next->next;
-    right->affected_faces[1] = back->head;
-    right->affected_faces[2] = down->head->next->next->next->next;
-    right->affected_faces[3] = front->head->next->next;
-
-    back->affected_faces[0] = up->head->next->next;
-    back->affected_faces[1] = left->head;
-    back->affected_faces[2] = down->head->prev->prev;
-    back->affected_faces[3] = right->head->next->next->next->next;
-
-    faces['U'] = up;
-    faces['F'] = front;
-    faces['D'] = down;
-    faces['L'] = left;
-    faces['R'] = right;
-    faces['B'] = back;
+    state[WB] = GO;
+    state[WO] = BR;
+    state[WG] = YB;
+    state[WR] = YO;
+    state[BO] = WG;
+    state[BR] = YR;
+    state[GO] = WO;
+    state[GR] = YG;
+    state[YB] = GR;
+    state[YO] = WB;
+    state[YG] = WR;
+    state[YR] = BO;
+    /* CORNERS */
+    state[WBO] = WBO;
+    state[WGO] = YGO;
+    state[WGR] = WGR;
+    state[WBR] = YBO;
+    state[YBO] = YBR;
+    state[YBR] = WGO;
+    state[YGR] = WBR;
+    state[YGO] = YGR;
 };
-
-Face::Face(std::array<std::string, 8> cubes) {
-    Node* ptr = new Node;
-    head = ptr;
-    ptr->prev = nullptr;
-    ptr->next = nullptr;
-    ptr->cube = cubes[0];
-
-    for (int i = 1; i < 8; i++) {
-        ptr->next = new Node;
-        ptr->next->prev = ptr;
-        ptr->next->next = head;
-        head->prev = ptr->next;
-        ptr = ptr->next;
-        ptr->cube = cubes[i];
-    }
-}
 
 /* END CONSTRUCTORS */
 
@@ -113,52 +125,35 @@ Face::Face(std::array<std::string, 8> cubes) {
 
 /* STATIC DEFINITIONS */
 
-RubiksMap RubiksCube::solved_state = {
-    /* EDGES */
-    {"wb", {0,1,1}},    
-    {"wo", {-1,0,1}},
-    {"wg", {0,-1,1}}, 
-    {"wr", {1,0,1}},
-    {"bo", {-1,1,0}},
-    {"br", {1,1,0}}, 
-    {"go", {-1,-1,0}},
-    {"gr", {1,-1,0}},
-    {"yb", {0,1,-1}},
-    {"yo", {-1,0,-1}},
-    {"yg", {0,-1,-1}},
-    {"yr", {1,0,-1}}, 
-    /* CORNERS */
-    {"wbo", {-1,1,1}}, 
-    {"wgo", {-1,-1,1}},
-    {"wgr", {1,-1,1}},
-    {"wbr", {1,1,1}},
-    {"ybo", {-1,1,-1}},
-    {"ybr", {1,1,-1}},
-    {"ygr", {1,-1,-1}},
-    {"ygo", {-1,-1,-1}} 
-};
-
-Edge* RubiksCube::edgify(RubiksCoord c, char face, char turn) {
+Edge* RubiksCube::edgify(RubiksCoord c, char move) {
     Edge* edge = new Edge;
     edge->coord = c;
-    edge->move.first = face;
-    edge->move.second = turn;
+    edge->move = move;
     return edge;
 }
 
-std::map<RubiksCoord, std::array<Edge*, 4>> RubiksCube::edge_adjacencies = {
-    {{0,1,1}, {edgify({1,0,1}, 'U', 'R'), edgify({1,1,0}, 'B', 'L'), edgify({-1,1,0}, 'B', 'R'), edgify({-1,0,1}, 'U', 'L')}},
-    {{1,0,1}, {edgify({0,1,1}, 'U', 'L'), edgify({0,-1,1}, 'U', 'R'), edgify({1,-1,0}, 'R', 'L'), edgify({1,1,0}, 'R', 'R')}},
-    {{0,-1,1}, {edgify({1,0,1}, 'U', 'L'), edgify({-1,0,1}, 'U', 'R'), edgify({1,-1,0}, 'F', 'R'), edgify({-1,-1,0}, 'F', 'L')}},
-    {{-1,0,1}, {edgify({0,1,1}, 'U', 'R'), edgify({0,-1,1}, 'U', 'L'), edgify({-1,1,0}, 'L', 'L'), edgify({-1,-1,0}, 'L', 'R')}},
-    {{-1,1,0}, {edgify({0,1,1}, 'B', 'L'), edgify({-1,0,1}, 'L', 'R'), edgify({0,1,-1}, 'B', 'R'), edgify({-1,0,-1}, 'L', 'L')}},
-    {{1,1,0}, {edgify({1,0,1}, 'R', 'L'), edgify({0,1,1}, 'B', 'R'), edgify({1,0,-1}, 'R', 'R'), edgify({0,1,-1}, 'B', 'L')}},
-    {{1,-1,0}, {edgify({1,0,1}, 'R', 'R'), edgify({0,-1,1}, 'F', 'L'), edgify({0,-1,-1}, 'F', 'R'), edgify({1,0,-1}, 'R', 'L')}},
-    {{-1,-1,0}, {edgify({-1,0,1}, 'L', 'L'), edgify({0,-1,1}, 'F', 'R'), edgify({-1,0,-1}, 'L', 'R'), edgify({0,-1,-1}, 'F', 'L')}},
-    {{0,1,-1}, {edgify({-1,1,0}, 'B', 'L'), edgify({1,0,-1}, 'D', 'L'), edgify({-1,0,-1}, 'D', 'R'), edgify({1,1,0}, 'B', 'R')}},
-    {{1,0,-1}, {edgify({1,-1,0}, 'R', 'R'), edgify({0,1,-1}, 'D', 'R'), edgify({1,1,0}, 'R', 'L'), edgify({0,-1,-1}, 'D', 'L')}},
-    {{0,-1,-1}, {edgify({1,0,-1}, 'D', 'R'), edgify({1,-1,0}, 'F', 'L'), edgify({-1,-1,0}, 'F', 'R'), edgify({-1,0,-1}, 'D', 'L')}},
-    {{-1,0,-1}, {edgify({0,-1,-1}, 'D', 'R'), edgify({-1,-1,0}, 'L', 'L'), edgify({-1,1,0}, 'L', 'R'), edgify({0,1,-1}, 'D', 'L')}}
+std::map<RubiksCoord, std::array<Edge*, 4>> RubiksCube::edgeAdjacencies = {
+    {WB, {edgify(WR, 'U'), edgify(BR, 'b'), edgify(BO, 'B'), edgify(WO, 'u')}},
+    {WR, {edgify(WB, 'u'), edgify(WG, 'U'), edgify(GR, 'r'), edgify(BR, 'R')}},
+    {WG, {edgify(WR, 'u'), edgify(WO, 'U'), edgify(GR, 'F'), edgify(GO, 'f')}},
+    {WO, {edgify(WB, 'U'), edgify(WG, 'u'), edgify(BO, 'l'), edgify(GO, 'L')}},
+    {BO, {edgify(WB, 'b'), edgify(WO, 'L'), edgify(YB, 'B'), edgify(YO, 'l')}},
+    {BR, {edgify(WR, 'r'), edgify(WB, 'B'), edgify(YR, 'R'), edgify(YB, 'b')}},
+    {GR, {edgify(WR, 'R'), edgify(WG, 'f'), edgify(YG, 'F'), edgify(YR, 'r')}},
+    {GO, {edgify(WO, 'l'), edgify(WG, 'F'), edgify(YO, 'L'), edgify(YG, 'f')}},
+    {YB, {edgify(BO, 'b'), edgify(YR, 'd'), edgify(YO, 'D'), edgify(BR, 'B')}},
+    {YR, {edgify(GR, 'R'), edgify(YB, 'D'), edgify(BR, 'r'), edgify(YG, 'd')}},
+    {YG, {edgify(YR, 'D'), edgify(GR, 'f'), edgify(GO, 'F'), edgify(YO, 'd')}},
+    {YO, {edgify(YG, 'D'), edgify(GO, 'l'), edgify(BO, 'L'), edgify(YB, 'd')}}
+};
+
+std::map<char, std::array<RubiksCoord, 8>> RubiksCube::faces = {
+    {'U', {WBO, WB, WBR, WR, WGR, WG, WGO, WO}},
+    {'F', {WGO, WG, WGR, GR, YGR, YG, YGO, GO}},
+    {'L', {WBO, WO, WGO, GO, YGO, YO, YBO, BO}},
+    {'R', {WGR, WR, WBR, BR, YBR, YR, YGR, GR}},
+    {'B', {WBR, WB, WBO, BO, YBO, YB, YBR, BR}},
+    {'D', {YGO, YG, YGR, YR, YBR, YB, YBO, YO}}
 };
 
 /* END STATIC DEFINITIONS */
@@ -167,15 +162,12 @@ std::map<RubiksCoord, std::array<Edge*, 4>> RubiksCube::edge_adjacencies = {
 
 /* FUNCTION DEFINITIONS */
 
-void RubiksCube::print_solved_state() {
-    std::cout << solved_state << std::endl;
+void RubiksCube::printState() const {
+
+    std::cout << state << std::endl;
 }
 
-void RubiksCube::print_unsolved_state() {
-    std::cout << unsolved_state << std::endl;
-}
-
-int RubiksCube::get_euclidean_distance(RubiksCoord unsolved, RubiksCoord solved) {
+int RubiksCube::getEuclideanDistance(RubiksCoord unsolved, RubiksCoord solved) const {
     double euclidean = 0;
     RubiksCoord result;
     for (int i = 0; i < 3; i++) {
@@ -186,113 +178,79 @@ int RubiksCube::get_euclidean_distance(RubiksCoord unsolved, RubiksCoord solved)
     return std::floor(euclidean);
 }
 
-void Face::cycle_list(char cycle, int times) {
-    // This function cycles through the doubly-linked circular linked list
-    // attribute in the Face class.
-    if (cycle == 'L') {
-        for (int i = 0; i < times; i++) this->head = this->head->prev;
+void RubiksCube::makeMove(char move) {
+
+    std::array<RubiksCoord, 8>& coords = faces.at(toupper(move));
+    std::pair<RubiksCoord, RubiksCoord> temp;
+
+    if (islower(move)) {  
+        temp.first = state.at(coords[0]);
+        temp.second = state.at(coords[1]);
+
+        state.at(coords[0]) = state.at(coords[2]);
+        state.at(coords[1]) = state.at(coords[3]);
+        state.at(coords[2]) = state.at(coords[4]);
+        state.at(coords[3]) = state.at(coords[5]);
+        state.at(coords[4]) = state.at(coords[6]);
+        state.at(coords[5]) = state.at(coords[7]);
+        state.at(coords[6]) = temp.first;
+        state.at(coords[7]) = temp.second;
     }
     else {
-        for (int i = 0; i < times; i++) this->head = this->head->next;
+        temp.first = state.at(coords[6]);
+        temp.second = state.at(coords[7]);
+
+        state.at(coords[6]) = state.at(coords[4]);
+        state.at(coords[7]) = state.at(coords[5]);
+        state.at(coords[4]) = state.at(coords[2]);
+        state.at(coords[5]) = state.at(coords[3]);
+        state.at(coords[2]) = state.at(coords[0]);
+        state.at(coords[3]) = state.at(coords[1]);
+        state.at(coords[0]) = temp.first;
+        state.at(coords[1]) = temp.second;
     }
+
 }
 
-void RubiksCube::cube_swap(Face* face, Face::Node* ptr) {
-    // Update coordinate of cube
-    std::cout << face->head->cube << ' ' << ptr->cube << std::endl;
-    unsolved_state.at(ptr->cube) = unsolved_state.at(face->head->cube);
-
-    // Transfer cube name from moved to affected face
-    ptr->cube = face->head->cube;
-}
-
-void RubiksCube::make_move(Face* face, char turn) {
-    if (turn == 'L') face->cycle_list('R', 2);
-    else face->cycle_list('L', 2);
-
-    // Update affected faces by replacing their adjacent cubes
-    // with the newly-moved cubes in the face in question. 
-    for (Face::Node* ptr : face->affected_faces) {
-        cube_swap(face, ptr);
-        face->cycle_list('R', 1);
-        cube_swap(face, ptr->prev);
-        face->cycle_list('R', 1);
-        cube_swap(face, ptr->prev->prev);
+RubiksCoord RubiksCube::getLocation(RubiksCoord cube) const {
+    auto iter = state.cbegin();
+    while (iter != state.cend()) {
+        if (iter->second == cube) return iter->first;
+        iter++;
     }
+
+    return {99,99,99};
 }
 
-int RubiksCube::solve_primary_face() {
-    // See which edges are out of place
-    print_unsolved_state();
-    while (unsolved_state.at("wo") != solved_state.at("wo")) {
-        
-        RubiksCoord unsolved = unsolved_state.at("wo");
-        RubiksCoord solved = solved_state.at("wo");
-        
-        int distance = get_euclidean_distance(unsolved, solved);
-        RubiksCoord best_move;
-        for (auto x : edge_adjacencies.at(unsolved)) {
-            int new_distance = get_euclidean_distance(x->coord, solved);
+void RubiksCube::solvePrimaryEdge(RubiksCoord key) {
+    RubiksCoord location = getLocation(key);
+    while (state.at(key) != key) {
+        int distance = getEuclideanDistance(location, key);
+        Edge *move;
+        for (auto x : edgeAdjacencies.at(location)) {
+            int new_distance = getEuclideanDistance(x->coord, key);
             if (new_distance < distance) {
-                best_move = x->coord;
+                move = x;
                 distance = new_distance;
             }
         }
-
-        // Find out what move to make
-        // Eventually factor in - minimal disturbance of solved edges
-        Edge *move = nullptr;
-        for (auto x : edge_adjacencies.at(unsolved_state.at("wo"))) {
-            if (x->coord == best_move) {
-                move = x;
-                break;
-            }
-        }
-        
         // Make the move
-        std::cout << move->move.first << ' ' << move->move.second << std::endl;
-        make_move(faces[move->move.first], move->move.second); 
-        
-        print_unsolved_state();
-        break;
+        std::cout << "PERFORMING MOVE:  " << move->move << std::endl << std::endl;
+        makeMove(move->move); 
+        location = move->coord;
     }
-    // while (unsolved_state["wo"] != solved_state["wo"]) {
-
-    // }
-    // while (unsolved_state["wg"] != solved_state["wg"]) {
-
-    // }
-    // while (unsolved_state["wr"] != solved_state["wr"]) {
-
-    // }
-
-    return 0;
 }
 
-/* TEMPORARY - WILL BE REPLACED BY IMAGE SEGMENTATION INPUT */
-
-void RubiksCube::set_unsolved_state() {
-    unsolved_state["wb"] = {1,-1,0};       // white/blue edge
-    unsolved_state["wo"] = {0,1,1};      // white/orange edge
-    unsolved_state["wg"] = {0,-1,1};      // white/green edge
-    unsolved_state["wr"] = {1,0,-1};       // white/red edge
-    unsolved_state["bo"] = {0,-1,-1};     // blue/orange edge
-    unsolved_state["br"] = {1,0,1};      // blue/red edge
-    unsolved_state["go"] = {0,1,-1};    // green/orange edge
-    unsolved_state["gr"] = {-1,1,0};     // green/red edge
-    unsolved_state["yb"] = {-1,0,-1};      // yellow/blue edge
-    unsolved_state["yo"] = {-1,0,1};     // yellow/orange edge
-    unsolved_state["yg"] = {1,1,0};     // yellow/green edge
-    unsolved_state["yr"] = {-1,-1,0};      // yellow/red edge
-    /* CORNERS */
-    unsolved_state["wbo"] = {-1,1,1};     // white/blue/orange corner
-    unsolved_state["wgo"] = {1,1,-1};    // white/orange/green corner
-    unsolved_state["wgr"] = {-1,-1,1};     // white/green/red corner
-    unsolved_state["wbr"] = {-1,-1,-1};      // white/blue/red corner
-    unsolved_state["ybo"] = {1,-1,-1};    // yellow/blue/orange corner
-    unsolved_state["ybr"] = {1,-1,1};     // yellow/blue/red corner
-    unsolved_state["ygr"] = {-1,1,-1};    // yellow/green/red corner
-    unsolved_state["ygo"] = {1,1,1};   // yellow/orange/green corner
+int RubiksCube::solveWhiteCross() {
+    printState();
+    
+    solvePrimaryEdge(WO);
+    solvePrimaryEdge(WB);
+    solvePrimaryEdge(WR);
+    solvePrimaryEdge(WG);
+    
+    printState();
+    return 0;
 }
 
 /* END FUNCTION DEFINITIONS */
